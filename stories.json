@@ -1,0 +1,37 @@
+{
+  "paquetes": [
+    {
+      "id_paquete": "ss_1",
+      "nombre": "Secret Stories #1",
+      "historias": [
+        {
+          "id": 1,
+          "titulo": "El hombre del bar",
+          "descripcion": "Un hombre entra en un bar y pide un vaso de agua...",
+          "solucion": "El hombre tenía hipo...",
+          "imagen": "assets/ss1_1.png"
+        },
+        {
+          "id": 2,
+          "titulo": "Muerte en el prado",
+          "descripcion": "Un hombre yace muerto en un prado...",
+          "solucion": "El hombre saltó de un avión...",
+          "imagen": "assets/ss1_2.png"
+        }
+      ]
+    },
+    {
+      "id_paquete": "ss_reales_1",
+      "nombre": "Secret Stories Reales #1",
+      "historias": [
+        {
+          "id": 1,
+          "titulo": "El robo imposible",
+          "descripcion": "Desapareció un diamante de una caja fuerte sellada...",
+          "solucion": "El diamante era de hielo y se derritió...",
+          "imagen": "assets/ss_reales_1_1.png"
+        }
+      ]
+    }
+  ]
+}
