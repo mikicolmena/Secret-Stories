@@ -1,25 +1,38 @@
 import json
+import urllib.request
 import flet as ft
 from flet.app import run
+
+# ==============================================================================
+# CONFIGURACIÓN DEL REPOSITORIO REMOTO (GITHUB)
+# Enlace oficial: https://github.com/mikicolmena/Secret-Stories
+# ==============================================================================
+GITHUB_USER = "mikicolmena"
+GITHUB_REPO = "Secret-Stories"
+GITHUB_BRANCH = "main"
+
+URL_STORIES_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/stories.json"
+URL_ASSETS_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/assets/"
 
 def main(page: ft.Page):
     page.title = "Secret Stories"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
 
-    # Variable local para rastrear el color de fondo de la app
     bg_color_actual = "#121212"
     page.bgcolor = bg_color_actual
 
-    # Normalizar ruta de imagen por si empieza por "assets/"
-    def limpiar_ruta_imagen(ruta: str) -> str:
+    # --- RESOLVER RUTA DE IMAGEN (URL REMOTA CON CACHÉ LOCAL FALLBACK) ---
+    def resolver_ruta_imagen(ruta: str) -> str:
         if not ruta:
             return ""
-        if ruta.startswith("assets/"):
-            return ruta.replace("assets/", "", 1)
-        return ruta
+        if ruta.startswith("http://") or ruta.startswith("https://"):
+            return ruta
+        
+        nombre_archivo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
+        return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
 
-    # --- FUNCIÓN DE NAVEGACIÓN COMPATIBLE CON FLET 1.0 ---
+    # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
         page.route = ruta
         route_change(None)
@@ -36,17 +49,39 @@ def main(page: ft.Page):
         page.bgcolor = bg_color_actual
         route_change(None)
 
-    # --- CARGA SEGURA DE DATOS ---
+    # --- CARGA INTELIGENTE DE DATOS (REMOTA CON FALLBACK LOCAL) ---
     datos_paquetes = []
-    try:
-        with open("stories.json", "r", encoding="utf-8") as f:
-            content = json.load(f)
-            datos_paquetes = content.get("paquetes", [])
-            print(f"-> 'stories.json' cargado con éxito. Colecciones encontradas: {len(datos_paquetes)}")
-    except FileNotFoundError:
-        print("Aviso: No se encontró stories.json en la carpeta actual.")
-    except json.JSONDecodeError:
-        print("Error: stories.json no tiene un formato JSON válido.")
+    
+    def cargar_historias():
+        nonlocal datos_paquetes
+        # 1. Intentar descargar la versión más reciente desde GitHub
+        try:
+            print("-> Conectando a GitHub para actualizar historias...")
+            req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=4) as response:
+                content = json.loads(response.read().decode('utf-8'))
+                datos_paquetes = content.get("paquetes", [])
+                print(f"-> ¡Éxito! Historias actualizadas desde GitHub ({GITHUB_USER}/{GITHUB_REPO}). Colecciones: {len(datos_paquetes)}")
+                
+                # Guardar copia local de respaldo para soporte offline
+                with open("stories.json", "w", encoding="utf-8") as f:
+                    json.dump(content, f, ensure_ascii=False, indent=2)
+                return
+        except Exception as err:
+            print(f"-> No se pudo conectar con GitHub ({err}). Cargando copia local...")
+
+        # 2. Si falla la red o no hay conexión, cargar stories.json local
+        try:
+            with open("stories.json", "r", encoding="utf-8") as f:
+                content = json.load(f)
+                datos_paquetes = content.get("paquetes", [])
+                print(f"-> 'stories.json' local cargado con éxito. Colecciones: {len(datos_paquetes)}")
+        except FileNotFoundError:
+            print("Aviso: No se encontró stories.json ni en red ni en local.")
+        except json.JSONDecodeError:
+            print("Error: stories.json local no es un JSON válido.")
+
+    cargar_historias()
 
     # --- VISTA 1: MENÚ DE COLECCIONES (PANTALLA PRINCIPAL) ---
     def vista_colecciones():
@@ -59,7 +94,6 @@ def main(page: ft.Page):
             ft.Container(
                 content=ft.Row(
                     [
-                        # Espaciador invisible para mantener centrado el título
                         ft.Container(width=48),
                         ft.Column(
                             [
@@ -68,7 +102,6 @@ def main(page: ft.Page):
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
-                        # Botón para cambiar tema Claro / Oscuro a la derecha
                         ft.IconButton(
                             icon=ft.Icons.LIGHT_MODE if es_oscuro else ft.Icons.DARK_MODE,
                             icon_color="#D32F2F",
@@ -87,7 +120,7 @@ def main(page: ft.Page):
         if not datos_paquetes:
             controles.append(
                 ft.Container(
-                    content=ft.Text("Crea o revisa 'stories.json' para cargar colecciones.", color="red", size=16),
+                    content=ft.Text("No se pudieron cargar historias desde GitHub ni desde el archivo local.", color="red", size=16),
                     padding=20,
                 )
             )
@@ -185,7 +218,7 @@ def main(page: ft.Page):
         for historia in stories_ordenadas:
             h_id = historia.get("id", 0)
             h_titulo = historia.get("titulo", "Misterio")
-            h_imagen = limpiar_ruta_imagen(historia.get("imagen", ""))
+            h_imagen = resolver_ruta_imagen(historia.get("imagen", ""))
 
             tarjeta = ft.Card(
                 elevation=4,
@@ -251,7 +284,6 @@ def main(page: ft.Page):
         if not historia:
             return ft.View(route=f"/juego/{pkg_id}/{historia_id}", controls=[ft.Text("Historia no encontrada")], bgcolor=bg_color_actual)
 
-        # Función de giro para la animación
         def girar_tarjeta(e):
             if tarjeta_animada.content.key == "frente":
                 tarjeta_animada.content = tarjeta_reverso
@@ -259,7 +291,7 @@ def main(page: ft.Page):
                 tarjeta_animada.content = tarjeta_frente
             page.update()
 
-        # --- CARA FRONTAL: HISTORIA ---
+        # Cara frontal (Misterio)
         tarjeta_frente = ft.Container(
             key="frente",
             padding=15,
@@ -268,7 +300,7 @@ def main(page: ft.Page):
             content=ft.Column(
                 [
                     ft.Image(
-                        src=limpiar_ruta_imagen(historia.get("imagen", "")),
+                        src=resolver_ruta_imagen(historia.get("imagen", "")),
                         height=200,
                         width=None,
                         fit="cover",
@@ -317,13 +349,13 @@ def main(page: ft.Page):
             ),
         )
 
-        # --- CARA TRASERA: SOLUCIÓN ---
+        # Cara trasera (Solución)
         tarjeta_reverso = ft.Container(
             key="reverso",
             padding=20,
             bgcolor=bg_card,
             border_radius=15,
-            border=ft.Border.all(2, "#D32F2F"),  # <--- CORREGIDO: ft.Border.all
+            border=ft.Border.all(2, "#D32F2F"),
             content=ft.Column(
                 [
                     ft.Icon(ft.Icons.KEY_OFF, color="#D32F2F", size=48),
@@ -364,7 +396,6 @@ def main(page: ft.Page):
             ),
         )
 
-        # Contenedor animado para la transición al girar de cara
         tarjeta_animada = ft.AnimatedSwitcher(
             content=tarjeta_frente,
             duration=400,
@@ -407,7 +438,6 @@ def main(page: ft.Page):
     def route_change(e):
         page.views.clear()
 
-        # Vista Raíz
         page.views.append(vista_colecciones())
 
         ruta_actual = page.route or "/"

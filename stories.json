@@ -6,23 +6,23 @@
       "historias": [
         {
           "id": 1,
-          "titulo": "El hombre del bar",
-          "descripcion": "Un hombre entra en un bar y pide un vaso de agua...",
-          "solucion": "El hombre tenía hipo...",
+          "titulo": "El flautista enterrado",
+          "descripcion": "En el castillo de Edimburgo, una melodía surgía cada noche de un pasillo sellado, aunque nadie había entrado allí en décadas.",
+          "solucion": "Durante semanas, la vigilante Inés oyó una flauta en un corredor clausurado del castillo de Edimburgo. La melodía aparecía solo en noches ventosas; a veces, una sombra cruzaba la pared aunque el pasillo estaba vacío. Los guías hablaban del fantasma de un gaitero desaparecido durante un antiguo asedio, y la historia empezó a atraer visitantes. Inés decidió investigar durante una tormenta y notó una corriente helada entre dos piedras. Tras retirar una rejilla cubierta de polvo, encontró un viejo conducto que daba al exterior. El viento hacía vibrar una pieza metálica suelta, produciendo las notas. Además, los faros de los coches proyectaban sombras de ramas sobre la pared. El supuesto fantasma nunca había estado allí: el castillo estaba tocando solo.",
           "imagen": "assets/ss1_1.png"
         },
         {
           "id": 2,
-          "titulo": "Muerte en el prado",
-          "descripcion": "Un hombre yace muerto en un prado...",
-          "solucion": "El hombre saltó de un avión...",
+          "titulo": "El gato de la Plaza Mayor",
+          "descripcion": "Dos vecinos enemistados por un callejero descubren que cuidaban al mismo animal.",
+          "solucion": "En la Plaza Mayor de Salamanca, el jubilado Anselmo y la estudiante de erasmus Lea llevan meses ignorándose por culpa de un gato callejero al que ambos alimentan a escondidas, cada uno convencido de que el otro lo maltrata. Una noche de tormenta, el felino queda atrapado en la tubería de desagüe del portal número 12; los maullidos obligan a Anselmo a llamar a bomberos y a Lea a traducir las instrucciones al operador checo que atiende la centralita 112. Mientras esperan bajo la arcada, comparten paraguas y café de termo, descubriendo que Anselmo fue profesor de checo en los ochenta y Lea estudia filología eslava. El gato sale ileso y, al día siguiente, aparece en el banco central con dos cuencos nuevos y una manta compartida. La reconciliación no nace de una disculpa, sino de darse cuenta de que ambos cuidaban al mismo animal por la misma soledad.",
           "imagen": "assets/ss1_2.png"
         }
       ]
     },
     {
       "id_paquete": "ss_reales_1",
-      "nombre": "Secret Stories Reales #1",
+      "nombre": "Historias Reales #1",
       "historias": [
         {
           "id": 1,
