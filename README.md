@@ -4,7 +4,7 @@
 [![Flet 1.0.4](https://img.shields.io/badge/Flet-1.0.4-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flet.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg?style=for-the-badge)](LICENSE)
 
-**Secret Stories** es una aplicación multiplataforma de juegos de acertijos y historias de misterio (inspirada en la mecánica clásica de *Black Stories* / *Dark Stories*), construida sobre **Python** y **Flet 1.0+** con soporte gráfico nativo de Flutter.
+**Secret Stories** es una aplicación multiplataforma de juegos de acertijos e historias de misterio (inspirada en la mecánica clásica de *Black Stories* / *Dark Stories*), construida sobre **Python** y **Flet 1.0+** con soporte gráfico nativo de Flutter.
 
 ---
 
@@ -18,14 +18,20 @@
 
 ---
 
-## 🛠️ Requisitos e Instalación
+## 🚀 Descarga e Instalación
 
-### Requisitos previos
-- **Python 3.12** (Recomendado via `pyenv` en Linux/Ubuntu o ejecutable oficial en Windows/macOS).
+Puedes descargar directamente el instalable o ejecutable correspondiente a tu plataforma desde la sección de **[Releases](https://github.com/mikicolmena/Secret-Stories/releases)**.
 
-### Paso a paso
+### 💻 Escritorio
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone [https://github.com/mikicolmena/Secret-Stories.git](https://github.com/mikicolmena/Secret-Stories.git)
-   cd Secret-Stories
+- **Windows (`.exe`):** Descarga el ejecutable y ábrelo directamente para jugar.
+- **Linux Portable (`.AppImage`):**
+  1. Descarga el archivo `.AppImage`.
+  2. Otórgale permisos de ejecución desde la terminal:
+     ```bash
+     chmod +x Secret-Stories.AppImage
+     ```
+  3. Haz doble clic sobre él o ejecútalo desde la terminal con `./Secret-Stories.AppImage`.
+- **Debian / Ubuntu (`.deb`):**
+  ```bash
+  sudo dpkg -i Secret-Stories.deb
