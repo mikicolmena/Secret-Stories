@@ -21,10 +21,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Configurar Flutter SDK
-        uses: subosito/flutter-action@v2
+      - name: Configurar Java JDK 17
+        uses: actions/setup-java@v4
         with:
-          channel: 'stable'
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Instalar Flet
         run: |
@@ -33,7 +34,7 @@ jobs:
 
       - name: Compilar para Windows
         run: |
-          echo y | flet build windows --verbose
+          flet build windows --yes --no-rich-output
 
       - name: Subir artefacto Windows (.exe)
         uses: actions/upload-artifact@v4
@@ -61,11 +62,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Configurar Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
       - name: Instalar Flet
         run: |
           python -m pip install --upgrade pip
@@ -73,7 +69,7 @@ jobs:
 
       - name: Compilar binario de Linux
         run: |
-          yes | flet build linux --verbose
+          flet build linux --yes --no-rich-output
 
       - name: Generar paquete .deb y .AppImage
         run: |
@@ -138,15 +134,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configurar Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Aceptar licencias Android SDK
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
-
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
@@ -159,7 +146,7 @@ jobs:
 
       - name: Compilar APK para Android
         run: |
-          yes | flet build apk --verbose
+          flet build apk --yes --no-rich-output
 
       - name: Subir artefacto Android (.apk)
         uses: actions/upload-artifact@v4
