@@ -19,6 +19,14 @@
           "solucion": "Durante un mes, Kemal encontró monedas otomanas antiguas en su caja registradora. Algunas eran auténticas y valían una fortuna. Convencido de que su tienda escondía un secreto, empezó a anunciar el fenómeno y pronto llegaron turistas y coleccionistas de toda Turquía. Las ventas se multiplicaron, pero un numismático reconoció una de las monedas: pertenecía a una colección privada que había sido robada años atrás. La policía registró el negocio y descubrió un doble fondo bajo el mostrador. Kemal introducía allí las monedas y las mezclaba con el cambio durante las ventas para fingir que aparecían misteriosamente. Había comprado las piezas con dinero prestado para atraer clientes, pero terminó perdiendo la tienda y enfrentándose a una investigación por el origen de varias monedas.",
           "categoria": "Codicia",
           "imagen": "assets/ss1_2.jpeg"
+        },
+        {
+          "id": 3,
+          "titulo": "El pasajero invisible",
+          "descripcion": "En el puerto de Nápoles, una lancha regresaba cada madrugada con una silla empapada en cubierta, aunque su patrón insistía en que viajaba solo.",
+          "solucion": "Durante cinco noches, los trabajadores del puerto observaron el mismo fenómeno: la silla aparecía mojada incluso cuando el mar estaba en calma y no había llovido. Un vigilante sospechó que el patrón escondía algo y colocó una cámara frente al embarcadero. En las imágenes no aparecía ningún pasajero, pero la silla se desplazaba unos centímetros durante cada viaje. La policía inspeccionó la lancha y descubrió una cuerda que atravesaba una rendija bajo el suelo. Al levantar una tabla, encontró un compartimento oculto donde un hombre permanecía encerrado. Era un mecánico al que el patrón había secuestrado después de que descubriera sus negocios ilegales. El prisionero mojaba la silla con agua de mar y tiraba de la cuerda para llamar la atención. La extraña señal terminó salvándole la vida.",
+          "categoria": "Codicia",
+          "imagen": "assets/ss1_3.jpeg"
         }
       ]
     },
