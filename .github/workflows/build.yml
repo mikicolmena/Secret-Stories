@@ -67,10 +67,15 @@ jobs:
 
       - name: Generar paquete .deb y .AppImage
         run: |
+          # Detectar dinámicamente el nombre del ejecutable generado por Flet
+          BIN_PATH=$(find build/linux -type f -executable ! -name "*.so" | head -n 1)
+          BIN_NAME=$(basename "$BIN_PATH")
+          echo "Ejecutable detectado: $BIN_NAME en $BIN_PATH"
+
           # Paquete .deb
           mkdir -p deb_package/usr/bin deb_package/usr/share/secret-stories deb_package/DEBIAN
           cp -r build/linux/* deb_package/usr/share/secret-stories/
-          ln -s /usr/share/secret-stories/main deb_package/usr/bin/secret-stories
+          ln -s "/usr/share/secret-stories/$BIN_NAME" deb_package/usr/bin/secret-stories
           cat <<EOT > deb_package/DEBIAN/control
           Package: secret-stories
           Version: 1.0.0
@@ -90,13 +95,13 @@ jobs:
           cat <<EOT > AppDir/AppRun
           #!/bin/sh
           HERE="\$(dirname "\$(readlink -f "\$0")")"
-          exec "\$HERE/usr/bin/main" "\$@"
+          exec "\$HERE/usr/bin/$BIN_NAME" "\$@"
           EOT
           chmod +x AppDir/AppRun
           cat <<EOT > AppDir/secret-stories.desktop
           [Desktop Entry]
           Name=Secret Stories
-          Exec=main
+          Exec=$BIN_NAME
           Icon=secret-stories
           Type=Application
           Categories=Game;
