@@ -1,5 +1,6 @@
 import json
 import urllib.request
+import asyncio
 import flet as ft
 from flet.app import run
 
@@ -21,20 +22,17 @@ def main(page: ft.Page):
     bg_color_actual = "#121212"
     page.bgcolor = bg_color_actual
     
-    # Controla si los datos e imágenes se están cargando desde GitHub o desde Local
     modo_remoto = False
 
-    # --- RESOLVER RUTA DE IMAGEN (ADAPTATIVO) ---
+    # --- RESOLVER RUTA DE IMAGEN ---
     def resolver_ruta_imagen(ruta: str) -> str:
         if not ruta:
             return ""
         if ruta.startswith("http://") or ruta.startswith("https://"):
             return ruta
         
-        # Extraer el nombre del archivo (ej. "ss1_1.jpeg")
         nombre_archivo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
         
-        # Si se conectó a GitHub, usa la URL remota; si no, usa el archivo local en assets/
         if modo_remoto:
             return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
         return nombre_archivo
@@ -56,12 +54,11 @@ def main(page: ft.Page):
         page.bgcolor = bg_color_actual
         route_change(None)
 
-    # --- CARGA INTELIGENTE DE DATOS (REMOTA CON FALLBACK LOCAL) ---
+    # --- CARGA INTELIGENTE DE DATOS ---
     datos_paquetes = []
     
     def cargar_historias():
         nonlocal datos_paquetes, modo_remoto
-        # 1. Intentar descargar la versión más reciente desde GitHub
         try:
             print("-> Conectando a GitHub para actualizar historias...")
             req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
@@ -71,7 +68,6 @@ def main(page: ft.Page):
                 modo_remoto = True
                 print(f"-> ¡Éxito! Historias actualizadas desde GitHub. Colecciones: {len(datos_paquetes)}")
                 
-                # Guardar copia local de respaldo
                 with open("stories.json", "w", encoding="utf-8") as f:
                     json.dump(content, f, ensure_ascii=False, indent=2)
                 return
@@ -79,7 +75,6 @@ def main(page: ft.Page):
             modo_remoto = False
             print(f"-> No se pudo conectar con GitHub ({err}). Cargando copia local...")
 
-        # 2. Si falla la red o el repo da 404, cargar historias localmente
         try:
             with open("stories.json", "r", encoding="utf-8") as f:
                 content = json.load(f)
@@ -92,7 +87,7 @@ def main(page: ft.Page):
 
     cargar_historias()
 
-    # --- VISTA 1: MENÚ DE COLECCIONES (PANTALLA PRINCIPAL) ---
+    # --- VISTA 1: MENÚ DE COLECCIONES ---
     def vista_colecciones():
         es_oscuro = (page.theme_mode == ft.ThemeMode.DARK)
         bg_card = "#1E1E1E" if es_oscuro else "#FFFFFF"
@@ -138,19 +133,32 @@ def main(page: ft.Page):
             nombre = paquete.get("nombre", "Sin nombre")
             pkg_id = paquete.get("id_paquete") or nombre
             
+            historias_paquete = paquete.get("historias") or paquete.get("stories") or []
+            total_historias = len(historias_paquete)
+            subtitulo_conteo = f"{total_historias} historias" if total_historias != 1 else "1 historia"
+            
             tarjeta = ft.GestureDetector(
                 content=ft.Card(
                     elevation=4,
                     content=ft.Container(
                         bgcolor=bg_card,
                         border_radius=10,
-                        padding=20,
+                        padding=18,
                         content=ft.Row(
                             [
-                                ft.Icon(ft.Icons.FOLDER_SPECIAL, color="#D32F2F", size=28),
-                                ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color=texto_principal),
+                                ft.Icon(ft.Icons.FOLDER_SPECIAL, color="#D32F2F", size=32),
+                                ft.Column(
+                                    [
+                                        ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color=texto_principal),
+                                        ft.Text(subtitulo_conteo, size=14, color=texto_secundario),
+                                    ],
+                                    spacing=2,
+                                    expand=True,
+                                ),
+                                ft.Icon(ft.Icons.CHEVRON_RIGHT, color=texto_secundario, size=24),
                             ],
                             spacing=15,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
                     ),
                 ),
@@ -274,7 +282,7 @@ def main(page: ft.Page):
             bgcolor=bg_color_actual,
         )
 
-    # --- VISTA 3: PANTALLA DE JUEGO (MISTERIO & SOLUCIÓN CON GIRO DE TARJETA) ---
+    # --- VISTA 3: PANTALLA DE JUEGO (MISTERIO & SOLUCIÓN) ---
     def vista_juego(pkg_id: str, historia_id: int):
         es_oscuro = (page.theme_mode == ft.ThemeMode.DARK)
         bg_card = "#1E1E1E" if es_oscuro else "#FFFFFF"
@@ -293,122 +301,130 @@ def main(page: ft.Page):
         if not historia:
             return ft.View(route=f"/juego/{pkg_id}/{historia_id}", controls=[ft.Text("Historia no encontrada")], bgcolor=bg_color_actual)
 
-        def girar_tarjeta(e):
-            if tarjeta_animada.content.key == "frente":
-                tarjeta_animada.content = tarjeta_reverso
-            else:
-                tarjeta_animada.content = tarjeta_frente
+        mostrando_frente = True
+
+        # Definición de la corrutina asíncrona para el giro de tarjeta
+        async def girar_tarjeta(e):
+            nonlocal mostrando_frente
+
+            tarjeta_contenedor.animate_scale = ft.Animation(180, curve=ft.AnimationCurve.EASE_IN)
+            tarjeta_contenedor.scale = ft.Scale(scale_x=0.0, scale_y=1.12)
             page.update()
 
-        tarjeta_frente = ft.Container(
-            key="frente",
-            padding=15,
-            bgcolor=bg_card,
-            border_radius=15,
-            content=ft.Column(
-                [
-                    ft.Image(
-                        src=resolver_ruta_imagen(historia.get("imagen", "")),
+            await asyncio.sleep(0.18)
+
+            mostrando_frente = not mostrando_frente
+            if mostrando_frente:
+                tarjeta_contenedor.content = tarjeta_frente_content
+                tarjeta_contenedor.border = None
+            else:
+                tarjeta_contenedor.content = tarjeta_reverso_content
+                tarjeta_contenedor.border = ft.Border.all(2, "#D32F2F")
+
+            tarjeta_contenedor.animate_scale = ft.Animation(180, curve=ft.AnimationCurve.EASE_OUT)
+            tarjeta_contenedor.scale = ft.Scale(scale_x=1.0, scale_y=1.0)
+            page.update()
+
+        # Cara frontal (Misterio)
+        tarjeta_frente_content = ft.Column(
+            [
+                ft.Image(
+                    src=resolver_ruta_imagen(historia.get("imagen", "")),
+                    height=200,
+                    width=None,
+                    fit="cover",
+                    border_radius=10,
+                    error_content=ft.Container(
                         height=200,
-                        width=None,
-                        fit="cover",
+                        bgcolor="#2A2A2A" if es_oscuro else "#E0E0E0",
+                        alignment=ft.Alignment(0, 0),
                         border_radius=10,
-                        error_content=ft.Container(
-                            height=200,
-                            bgcolor="#2A2A2A" if es_oscuro else "#E0E0E0",
-                            alignment=ft.Alignment(0, 0),
-                            border_radius=10,
-                            content=ft.Icon(ft.Icons.IMAGE, color="white54" if es_oscuro else "black38", size=50),
-                        ),
+                        content=ft.Icon(ft.Icons.IMAGE, color="white54" if es_oscuro else "black38", size=50),
                     ),
-                    ft.Text(
-                        historia.get("titulo", ""),
-                        size=22,
-                        weight=ft.FontWeight.BOLD,
-                        color=texto_principal,
-                        text_align=ft.TextAlign.CENTER,
+                ),
+                ft.Text(
+                    historia.get("titulo", ""),
+                    size=22,
+                    weight=ft.FontWeight.BOLD,
+                    color=texto_principal,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                ft.Divider(color=color_divider),
+                ft.Text(
+                    historia.get("descripcion", ""),
+                    size=17,
+                    color=texto_secundario,
+                    text_align=ft.TextAlign.JUSTIFY,
+                ),
+                ft.Divider(color=color_divider),
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(ft.Icons.KEY, color="white", size=20),
+                            ft.Text("Ver Solución", color="white", weight=ft.FontWeight.BOLD),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=8,
                     ),
-                    ft.Divider(color=color_divider),
-                    ft.Text(
-                        historia.get("descripcion", ""),
-                        size=17,
-                        color=texto_secundario,
-                        text_align=ft.TextAlign.JUSTIFY,
-                    ),
-                    ft.Divider(color=color_divider),
-                    ft.Container(
-                        content=ft.Row(
-                            [
-                                ft.Icon(ft.Icons.KEY, color="white", size=20),
-                                ft.Text("Ver Solución", color="white", weight=ft.FontWeight.BOLD),
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            spacing=8,
-                        ),
-                        bgcolor="#B71C1C",
-                        padding=12,
-                        border_radius=8,
-                        ink=True,
-                        on_click=girar_tarjeta,
-                    ),
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=15,
-            ),
+                    bgcolor="#B71C1C",
+                    padding=12,
+                    border_radius=8,
+                    ink=True,
+                    on_click=girar_tarjeta,
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15,
         )
 
-        tarjeta_reverso = ft.Container(
-            key="reverso",
-            padding=20,
+        # Cara trasera (Solución)
+        tarjeta_reverso_content = ft.Column(
+            [
+                ft.Icon(ft.Icons.KEY_OFF, color="#D32F2F", size=48),
+                ft.Text(
+                    "SOLUCIÓN",
+                    size=22,
+                    weight=ft.FontWeight.BOLD,
+                    color="#D32F2F",
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                ft.Divider(color=color_divider),
+                ft.Text(
+                    historia.get("solucion", ""),
+                    size=18,
+                    weight=ft.FontWeight.BOLD,
+                    color="#EF5350" if es_oscuro else "#C62828",
+                    text_align=ft.TextAlign.CENTER,
+                ),
+                ft.Divider(color=color_divider),
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(ft.Icons.REPLAY, color="white", size=20),
+                            ft.Text("Volver a la Historia", color="white", weight=ft.FontWeight.BOLD),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=8,
+                    ),
+                    bgcolor="#333333" if es_oscuro else "#616161",
+                    padding=12,
+                    border_radius=8,
+                    ink=True,
+                    on_click=girar_tarjeta,
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15,
+        )
+
+        tarjeta_contenedor = ft.Container(
+            padding=18,
             bgcolor=bg_card,
             border_radius=15,
-            border=ft.Border.all(2, "#D32F2F"),
-            content=ft.Column(
-                [
-                    ft.Icon(ft.Icons.KEY_OFF, color="#D32F2F", size=48),
-                    ft.Text(
-                        "SOLUCIÓN",
-                        size=22,
-                        weight=ft.FontWeight.BOLD,
-                        color="#D32F2F",
-                        text_align=ft.TextAlign.CENTER,
-                    ),
-                    ft.Divider(color=color_divider),
-                    ft.Text(
-                        historia.get("solucion", ""),
-                        size=18,
-                        weight=ft.FontWeight.BOLD,
-                        color="#EF5350" if es_oscuro else "#C62828",
-                        text_align=ft.TextAlign.CENTER,
-                    ),
-                    ft.Divider(color=color_divider),
-                    ft.Container(
-                        content=ft.Row(
-                            [
-                                ft.Icon(ft.Icons.REPLAY, color="white", size=20),
-                                ft.Text("Volver a la Historia", color="white", weight=ft.FontWeight.BOLD),
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                            spacing=8,
-                        ),
-                        bgcolor="#333333" if es_oscuro else "#616161",
-                        padding=12,
-                        border_radius=8,
-                        ink=True,
-                        on_click=girar_tarjeta,
-                    ),
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=15,
-            ),
-        )
-
-        tarjeta_animada = ft.AnimatedSwitcher(
-            content=tarjeta_frente,
-            duration=400,
-            reverse_duration=400,
-            switch_in_curve="easeOutBack",
-            switch_out_curve="easeInBack",
+            border=None,
+            content=tarjeta_frente_content,
+            scale=ft.Scale(scale_x=1.0, scale_y=1.0),
+            animate_scale=ft.Animation(180, curve=ft.AnimationCurve.EASE_IN),
         )
 
         contenido_juego = [
@@ -432,7 +448,7 @@ def main(page: ft.Page):
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            tarjeta_animada,
+            tarjeta_contenedor,
         ]
 
         return ft.View(

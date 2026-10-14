@@ -14,10 +14,10 @@
         },
         {
           "id": 2,
-          "titulo": "El gato de la Plaza Mayor",
-          "descripcion": "Dos vecinos enemistados por un callejero descubren que cuidaban al mismo animal.",
-          "solucion": "En la Plaza Mayor de Salamanca, el jubilado Anselmo y la estudiante de erasmus Lea llevan meses ignorándose por culpa de un gato callejero al que ambos alimentan a escondidas, cada uno convencido de que el otro lo maltrata. Una noche de tormenta, el felino queda atrapado en la tubería de desagüe del portal número 12; los maullidos obligan a Anselmo a llamar a bomberos y a Lea a traducir las instrucciones al operador checo que atiende la centralita 112. Mientras esperan bajo la arcada, comparten paraguas y café de termo, descubriendo que Anselmo fue profesor de checo en los ochenta y Lea estudia filología eslava. El gato sale ileso y, al día siguiente, aparece en el banco central con dos cuencos nuevos y una manta compartida. La reconciliación no nace de una disculpa, sino de darse cuenta de que ambos cuidaban al mismo animal por la misma soledad.",
-          "categoria": "Real",
+          "titulo": "Las monedas imposibles",
+          "descripcion": "En el Gran Bazar de Estambul, un comerciante comenzó a recibir monedas de un imperio desaparecido que nadie recordaba haberle entregado.",
+          "solucion": "Durante un mes, Kemal encontró monedas otomanas antiguas en su caja registradora. Algunas eran auténticas y valían una fortuna. Convencido de que su tienda escondía un secreto, empezó a anunciar el fenómeno y pronto llegaron turistas y coleccionistas de toda Turquía. Las ventas se multiplicaron, pero un numismático reconoció una de las monedas: pertenecía a una colección privada que había sido robada años atrás. La policía registró el negocio y descubrió un doble fondo bajo el mostrador. Kemal introducía allí las monedas y las mezclaba con el cambio durante las ventas para fingir que aparecían misteriosamente. Había comprado las piezas con dinero prestado para atraer clientes, pero terminó perdiendo la tienda y enfrentándose a una investigación por el origen de varias monedas.",
+          "categoria": "Codicia",
           "imagen": "assets/ss1_2.jpeg"
         }
       ]
