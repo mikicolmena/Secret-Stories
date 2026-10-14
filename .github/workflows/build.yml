@@ -28,7 +28,7 @@ jobs:
 
       - name: Compilar para Windows
         run: |
-          flet build windows --product "Secret Stories" --icon "assets/logo.jpeg" --yes --no-rich-output
+          flet build windows --yes --no-rich-output
 
       - name: Subir artefacto Windows (.exe)
         uses: actions/upload-artifact@v5
@@ -63,7 +63,7 @@ jobs:
 
       - name: Compilar binario de Linux
         run: |
-          flet build linux --product "Secret Stories" --icon "assets/logo.jpeg" --yes --no-rich-output
+          flet build linux --yes --no-rich-output
 
       - name: Generar paquete .deb y .AppImage
         run: |
@@ -150,11 +150,10 @@ jobs:
 
       - name: Compilar APK para Android
         run: |
-          flet build apk --product "Secret Stories" --icon "assets/logo.jpeg" --yes --no-rich-output
+          flet build apk --yes --no-rich-output
 
       - name: Subir artefacto Android (.apk)
         uses: actions/upload-artifact@v5
         with:
           name: Secret-Stories-Android-apk
           path: build/apk/*.apk
-          
