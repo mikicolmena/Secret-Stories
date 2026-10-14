@@ -1,3 +1,4 @@
+import os
 import json
 import urllib.request
 import asyncio
@@ -5,7 +6,7 @@ import flet as ft
 from flet.app import run
 
 # ==============================================================================
-# CONFIGURACIÓN DEL REPOSITORIO REMOTO (GITHUB)
+# CONFIGURACIÓN DE RUTAS Y REPOSITORIO REMOTO
 # ==============================================================================
 GITHUB_USER = "mikicolmena"
 GITHUB_REPO = "Secret-Stories"
@@ -13,6 +14,10 @@ GITHUB_BRANCH = "main"
 
 URL_STORIES_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/stories.json"
 URL_ASSETS_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/assets/"
+
+# Ruta absoluta dinámica para compatibilidad con Android / Linux / Windows
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+RUTA_STORIES_LOCAL = os.path.join(BASE_DIR, "stories.json")
 
 def main(page: ft.Page):
     page.title = "Secret Stories"
@@ -35,7 +40,7 @@ def main(page: ft.Page):
         
         if modo_remoto:
             return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
-        return nombre_archivo
+        return f"/{nombre_archivo}"
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
@@ -59,6 +64,7 @@ def main(page: ft.Page):
     
     def cargar_historias():
         nonlocal datos_paquetes, modo_remoto
+        # 1. Intentar descargar desde GitHub
         try:
             print("-> Conectando a GitHub para actualizar historias...")
             req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
@@ -68,20 +74,21 @@ def main(page: ft.Page):
                 modo_remoto = True
                 print(f"-> ¡Éxito! Historias actualizadas desde GitHub. Colecciones: {len(datos_paquetes)}")
                 
-                with open("stories.json", "w", encoding="utf-8") as f:
+                with open(RUTA_STORIES_LOCAL, "w", encoding="utf-8") as f:
                     json.dump(content, f, ensure_ascii=False, indent=2)
                 return
         except Exception as err:
             modo_remoto = False
             print(f"-> No se pudo conectar con GitHub ({err}). Cargando copia local...")
 
+        # 2. Cargar copia local con ruta absoluta explícita
         try:
-            with open("stories.json", "r", encoding="utf-8") as f:
+            with open(RUTA_STORIES_LOCAL, "r", encoding="utf-8") as f:
                 content = json.load(f)
                 datos_paquetes = content.get("paquetes", [])
                 print(f"-> 'stories.json' local cargado con éxito. Colecciones: {len(datos_paquetes)}")
         except FileNotFoundError:
-            print("Aviso: No se encontró stories.json ni en red ni en local.")
+            print(f"Aviso: No se encontró stories.json en {RUTA_STORIES_LOCAL}")
         except json.JSONDecodeError:
             print("Error: stories.json local no es un JSON válido.")
 
@@ -172,7 +179,7 @@ def main(page: ft.Page):
             bgcolor=bg_color_actual,
         )
 
-    # --- VISTA 2: LISTA DE HISTORIAS DE UN PAQUETE ---
+    # --- VISTA 2: LISTA DE HISTORIAS ---
     def vista_paquete(pkg_id: str):
         es_oscuro = (page.theme_mode == ft.ThemeMode.DARK)
         bg_card = "#1E1E1E" if es_oscuro else "#FFFFFF"
@@ -282,7 +289,7 @@ def main(page: ft.Page):
             bgcolor=bg_color_actual,
         )
 
-    # --- VISTA 3: PANTALLA DE JUEGO (MISTERIO & SOLUCIÓN) ---
+    # --- VISTA 3: PANTALLA DE JUEGO ---
     def vista_juego(pkg_id: str, historia_id: int):
         es_oscuro = (page.theme_mode == ft.ThemeMode.DARK)
         bg_card = "#1E1E1E" if es_oscuro else "#FFFFFF"
@@ -303,7 +310,6 @@ def main(page: ft.Page):
 
         mostrando_frente = True
 
-        # Definición de la corrutina asíncrona para el giro de tarjeta
         async def girar_tarjeta(e):
             nonlocal mostrando_frente
 
@@ -325,7 +331,6 @@ def main(page: ft.Page):
             tarjeta_contenedor.scale = ft.Scale(scale_x=1.0, scale_y=1.0)
             page.update()
 
-        # Cara frontal (Misterio)
         tarjeta_frente_content = ft.Column(
             [
                 ft.Image(
@@ -377,7 +382,6 @@ def main(page: ft.Page):
             spacing=15,
         )
 
-        # Cara trasera (Solución)
         tarjeta_reverso_content = ft.Column(
             [
                 ft.Icon(ft.Icons.KEY_OFF, color="#D32F2F", size=48),
