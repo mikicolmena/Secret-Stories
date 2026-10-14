@@ -1,0 +1,13 @@
+[project]
+name = "secret_stories"
+version = "1.0.0"
+
+[tool.flet]
+product = "Secret Stories"
+org = "com.mikicolmena"
+
+[tool.flet.icons]
+android = "assets/icon.png"
+
+[tool.flet.app]
+module = "main"
