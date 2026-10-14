@@ -5,7 +5,6 @@ from flet.app import run
 
 # ==============================================================================
 # CONFIGURACIÓN DEL REPOSITORIO REMOTO (GITHUB)
-# Enlace oficial: https://github.com/mikicolmena/Secret-Stories
 # ==============================================================================
 GITHUB_USER = "mikicolmena"
 GITHUB_REPO = "Secret-Stories"
@@ -21,16 +20,24 @@ def main(page: ft.Page):
 
     bg_color_actual = "#121212"
     page.bgcolor = bg_color_actual
+    
+    # Controla si los datos e imágenes se están cargando desde GitHub o desde Local
+    modo_remoto = False
 
-    # --- RESOLVER RUTA DE IMAGEN (URL REMOTA CON CACHÉ LOCAL FALLBACK) ---
+    # --- RESOLVER RUTA DE IMAGEN (ADAPTATIVO) ---
     def resolver_ruta_imagen(ruta: str) -> str:
         if not ruta:
             return ""
         if ruta.startswith("http://") or ruta.startswith("https://"):
             return ruta
         
+        # Extraer el nombre del archivo (ej. "ss1_1.jpeg")
         nombre_archivo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
-        return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
+        
+        # Si se conectó a GitHub, usa la URL remota; si no, usa el archivo local en assets/
+        if modo_remoto:
+            return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
+        return nombre_archivo
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
@@ -53,7 +60,7 @@ def main(page: ft.Page):
     datos_paquetes = []
     
     def cargar_historias():
-        nonlocal datos_paquetes
+        nonlocal datos_paquetes, modo_remoto
         # 1. Intentar descargar la versión más reciente desde GitHub
         try:
             print("-> Conectando a GitHub para actualizar historias...")
@@ -61,16 +68,18 @@ def main(page: ft.Page):
             with urllib.request.urlopen(req, timeout=4) as response:
                 content = json.loads(response.read().decode('utf-8'))
                 datos_paquetes = content.get("paquetes", [])
-                print(f"-> ¡Éxito! Historias actualizadas desde GitHub ({GITHUB_USER}/{GITHUB_REPO}). Colecciones: {len(datos_paquetes)}")
+                modo_remoto = True
+                print(f"-> ¡Éxito! Historias actualizadas desde GitHub. Colecciones: {len(datos_paquetes)}")
                 
-                # Guardar copia local de respaldo para soporte offline
+                # Guardar copia local de respaldo
                 with open("stories.json", "w", encoding="utf-8") as f:
                     json.dump(content, f, ensure_ascii=False, indent=2)
                 return
         except Exception as err:
+            modo_remoto = False
             print(f"-> No se pudo conectar con GitHub ({err}). Cargando copia local...")
 
-        # 2. Si falla la red o no hay conexión, cargar stories.json local
+        # 2. Si falla la red o el repo da 404, cargar historias localmente
         try:
             with open("stories.json", "r", encoding="utf-8") as f:
                 content = json.load(f)
@@ -291,7 +300,6 @@ def main(page: ft.Page):
                 tarjeta_animada.content = tarjeta_frente
             page.update()
 
-        # Cara frontal (Misterio)
         tarjeta_frente = ft.Container(
             key="frente",
             padding=15,
@@ -349,7 +357,6 @@ def main(page: ft.Page):
             ),
         )
 
-        # Cara trasera (Solución)
         tarjeta_reverso = ft.Container(
             key="reverso",
             padding=20,
