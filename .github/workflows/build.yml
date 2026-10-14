@@ -1,0 +1,100 @@
+name: Build Secret Stories Binaries
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install --upgrade pip
+          pip install flet flet-desktop
+      - run: flet build windows --verbose
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Secret-Stories-Windows-exe
+          path: build/windows/
+
+  build-linux:
+    name: Build Linux (.deb & .AppImage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y build-essential libgtk-3-dev liblzma-dev ninja-build pkg-config
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install --upgrade pip
+          pip install flet flet-desktop
+      - run: flet build linux --verbose
+      - run: |
+          mkdir -p deb_package/usr/bin deb_package/usr/share/secret-stories deb_package/DEBIAN
+          cp -r build/linux/* deb_package/usr/share/secret-stories/
+          ln -s /usr/share/secret-stories/main deb_package/usr/bin/secret-stories
+          cat <<EOT > deb_package/DEBIAN/control
+          Package: secret-stories
+          Version: 1.0.0
+          Section: games
+          Priority: optional
+          Architecture: amd64
+          Maintainer: mikicolmena
+          Description: Secret Stories - Juego de misterio y acertijos
+          EOT
+          dpkg-deb --build deb_package Secret-Stories.deb
+
+          wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          mkdir -p AppDir/usr/bin
+          cp -r build/linux/* AppDir/usr/bin/
+          cat <<EOT > AppDir/AppRun
+          #!/bin/sh
+          HERE="\$(dirname "\$(readlink -f "\$0")")"
+          exec "\$HERE/usr/bin/main" "\$@"
+          EOT
+          chmod +x AppDir/AppRun
+          cat <<EOT > AppDir/secret-stories.desktop
+          [Desktop Entry]
+          Name=Secret Stories
+          Exec=main
+          Icon=secret-stories
+          Type=Application
+          Categories=Game;
+          EOT
+          touch AppDir/secret-stories.png
+          ./appimagetool-x86_64.AppImage AppDir Secret-Stories.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Secret-Stories-Linux-Packages
+          path: |
+            Secret-Stories.deb
+            Secret-Stories.AppImage
+
+  build-android:
+    name: Build Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install --upgrade pip
+          pip install flet flet-desktop
+      - run: flet build apk --verbose
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Secret-Stories-Android-apk
+          path: build/apk/*.apk
