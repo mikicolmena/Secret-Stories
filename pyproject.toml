@@ -11,7 +11,7 @@ org = "com.mikicolmena"
 module = "main"
 
 [tool.flet.icons]
-icon = "assets/logo.jpeg"
+icon = "assets/logo.png"
 
 [tool.flet.splash]
 color = "#121212"

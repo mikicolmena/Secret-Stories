@@ -67,8 +67,10 @@ jobs:
 
       - name: Generar paquete .deb y .AppImage
         run: |
-          BIN_PATH=$(find build/linux -type f -executable ! -name "*.so" | head -n 1)
+          # Excluir 'flet' para detectar el ejecutable real del juego
+          BIN_PATH=$(find build/linux -type f -executable ! -name "*.so" ! -name "flet" | head -n 1)
           BIN_NAME=$(basename "$BIN_PATH")
+          echo "Ejecutable real detectado: $BIN_NAME en $BIN_PATH"
 
           # Paquete .deb
           mkdir -p deb_package/usr/bin deb_package/usr/share/secret-stories deb_package/DEBIAN
@@ -105,11 +107,9 @@ jobs:
           Categories=Game;
           EOT
           
-          if [ -f "assets/logo.jpeg" ]; then
-            cp assets/logo.jpeg AppDir/secret-stories.jpeg
-            ln -s secret-stories.jpeg AppDir/.DirIcon
-          else
-            touch AppDir/secret-stories.png
+          if [ -f "assets/logo.png" ]; then
+            cp assets/logo.png AppDir/secret-stories.png
+            ln -s secret-stories.png AppDir/.DirIcon
           fi
 
           ./appimagetool.AppImage AppDir Secret-Stories.AppImage
