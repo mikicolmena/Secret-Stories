@@ -10,7 +10,6 @@
 
 * 🔄 **Sincronización Remota Automática:** Al abrir la aplicación, esta consulta de forma transparente el repositorio remoto de GitHub (`mikicolmena/Secret-Stories`) para descargar nuevas historias o imágenes sin necesidad de actualizar la aplicación manualmente.
 * 📴 **Soporte Offline Garantizado:** Si no hay conexión a Internet, el programa utiliza automáticamente la copia local en caché de `stories.json`.
-* 🃏 **Animación de Tarjeta Giratoria:** Transiciones fluidas con `AnimatedSwitcher` para revelar la solución del misterio al girar la tarjeta.
 * 🌓 **Conmutador de Tema Claro / Oscuro:** Botón integrado en la cabecera para cambiar de tema visual instantáneamente.
 * 📂 **Estructura Modular por Colecciones (DLCs):** Soporte multinivel para paquetes de historias independientes (ej. *Secret Stories #1*, *Secret Stories Reales #1*).
 
