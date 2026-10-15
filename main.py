@@ -165,7 +165,6 @@ def main(page: ft.Page):
         if ruta.startswith("http://") or ruta.startswith("https://"):
             return ruta
         
-        # Limpiar prefijo assets/ si viene especificado
         nombre_relativo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
         nombre_relativo = nombre_relativo.lstrip("/")
         
@@ -184,6 +183,25 @@ def main(page: ft.Page):
         if modo_remoto:
             return f"{URL_ASSETS_REMOTO}{nombre_relativo}"
             
+        return f"/{nombre_relativo}"
+
+    # --- RESOLVER RUTA DE FUENTE PERSONALIZADA ---
+    def resolver_ruta_fuente(ruta: str) -> str:
+        if not ruta or ruta.lower() == "none":
+            return ""
+        if ruta.startswith("http://") or ruta.startswith("https://"):
+            return ruta
+
+        nombre_relativo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
+        nombre_relativo = nombre_relativo.lstrip("/")
+
+        ruta_fisica_local = os.path.join(DIR_ASSETS_LOCAL, nombre_relativo)
+        if os.path.exists(ruta_fisica_local):
+            return f"/{nombre_relativo}"
+
+        if modo_remoto:
+            return f"{URL_ASSETS_REMOTO}{nombre_relativo}"
+
         return f"/{nombre_relativo}"
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
@@ -226,6 +244,9 @@ def main(page: ft.Page):
     # --- 2. SINCRONIZACIÓN EN SEGUNDO PLANO ---
     async def sincronizar_github():
         nonlocal datos_paquetes, modo_remoto, estado_sincronizacion, sincronizando
+        if sincronizando:
+            return
+
         sincronizando = True
         estado_sincronizacion = "Comprobando historias en la nube..."
         if page.route == "/":
@@ -274,6 +295,10 @@ def main(page: ft.Page):
         if page.route == "/":
             route_change(None)
 
+    def solicitar_actualizacion_manual(e):
+        if not sincronizando:
+            asyncio.create_task(sincronizar_github())
+
     asyncio.create_task(sincronizar_github())
 
     # --- VISTA 1: MENÚ DE COLECCIONES ---
@@ -318,6 +343,9 @@ def main(page: ft.Page):
                 )
             )
 
+        if page.fonts is None:
+            page.fonts = {}
+
         for paquete in datos_paquetes:
             if not es_paquete_visible(paquete.get("temp", "always")):
                 continue
@@ -334,13 +362,28 @@ def main(page: ft.Page):
             banner_val = paquete.get("banner", "none")
             banner_ruta = resolver_ruta_imagen(banner_val) if banner_val and banner_val.lower() != "none" else ""
 
-            # Contenido base de la tarjeta
+            # Gestión de fuente personalizada para el título del paquete
+            font_val = paquete.get("font", "none")
+            font_ruta = resolver_ruta_fuente(font_val) if font_val and font_val.lower() != "none" else ""
+            
+            font_family_nombre = None
+            if font_ruta:
+                font_alias = f"font_{pkg_id}"
+                page.fonts[font_alias] = font_ruta
+                font_family_nombre = font_alias
+
             fila_contenido = ft.Row(
                 [
                     ft.Icon(ft.Icons.FOLDER_SPECIAL, color="#D32F2F", size=32),
                     ft.Column(
                         [
-                            ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color="white" if banner_ruta else texto_principal),
+                            ft.Text(
+                                nombre,
+                                size=20,
+                                weight=ft.FontWeight.BOLD,
+                                color="white" if banner_ruta else texto_principal,
+                                font_family=font_family_nombre
+                            ),
                             ft.Text(subtitulo_conteo, size=14, color="white70" if banner_ruta else texto_secundario),
                         ],
                         spacing=2,
@@ -352,7 +395,6 @@ def main(page: ft.Page):
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             )
 
-            # Si tiene banner, usa un Stack con capas de imagen + filtro oscuro
             if banner_ruta:
                 contenido_tarjeta = ft.Container(
                     border_radius=10,
@@ -362,11 +404,17 @@ def main(page: ft.Page):
                             ft.Image(
                                 src=banner_ruta,
                                 fit="cover",
-                                expand=True,
+                                top=0,
+                                left=0,
+                                right=0,
+                                bottom=0,
                             ),
                             ft.Container(
-                                bgcolor="#B3000000",  # Sombra oscura del 70% para legibilidad
-                                expand=True,
+                                bgcolor="#B3000000",
+                                top=0,
+                                left=0,
+                                right=0,
+                                bottom=0,
                             ),
                             ft.Container(
                                 content=fila_contenido,
@@ -395,7 +443,7 @@ def main(page: ft.Page):
         indicador_icono = (
             ft.ProgressRing(width=12, height=12, stroke_width=2, color="#D32F2F")
             if sincronizando
-            else ft.Icon(ft.Icons.WIFI if modo_remoto else ft.Icons.WIFI_OFF, size=14, color="#D32F2F")
+            else ft.Icon(ft.Icons.REFRESH if modo_remoto else ft.Icons.WIFI_OFF, size=14, color="#D32F2F")
         )
 
         barra_estado = ft.Container(
@@ -409,6 +457,9 @@ def main(page: ft.Page):
             ),
             bgcolor=bg_card,
             padding=10,
+            ink=True,
+            on_click=solicitar_actualizacion_manual,
+            tooltip="Clic para buscar actualizaciones en GitHub",
             border_radius=ft.BorderRadius(top_left=10, top_right=10, bottom_left=0, bottom_right=0),
         )
 
@@ -447,6 +498,11 @@ def main(page: ft.Page):
 
         stories = paquete.get("historias") or paquete.get("stories") or []
 
+        # Fuente personalizada opcional también para el encabezado
+        font_val = paquete.get("font", "none")
+        font_ruta = resolver_ruta_fuente(font_val) if font_val and font_val.lower() != "none" else ""
+        font_family_nombre = f"font_{pkg_id}" if font_ruta else None
+
         controles = [
             ft.Container(
                 content=ft.Row(
@@ -462,6 +518,7 @@ def main(page: ft.Page):
                             weight=ft.FontWeight.BOLD,
                             color="#D32F2F",
                             text_align=ft.TextAlign.CENTER,
+                            font_family=font_family_nombre,
                             expand=True,
                         ),
                         ft.Container(width=48),

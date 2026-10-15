@@ -5,6 +5,7 @@
       "nombre": "Secret Stories #1",
       "temp": "always",
       "banner": "none",
+      "font": "none",
       "historias": [
         {
           "id": 1,
@@ -53,6 +54,7 @@
       "nombre": "Historias Halloween #1",
       "temp": "14-10/01-11",
       "banner": "assets/img/bannerhalloween.webp",
+      "font": "assets/fonts/halloween.ttf",
       "historias": [
         {
           "id": 1,
