@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import asyncio
+import time
 from datetime import datetime
 import flet as ft
 from flet.app import run
@@ -27,7 +28,7 @@ def es_paquete_visible(temp_str: str) -> bool:
     Evalúa si un paquete es visible según la fecha actual.
     Formatos soportados:
     - "always" / "allways" -> Siempre visible.
-    - "DD-MM/DD-MM" (ej: "01-12/01-02") -> Visible dentro de ese rango de fechas todos los años.
+    - "DD-MM/DD-MM" (ej: "01-10/01-11") -> Visible dentro de ese rango de fechas todos los años.
     """
     if not temp_str or temp_str.lower() in ["always", "allways"]:
         return True
@@ -224,10 +225,20 @@ def main(page: ft.Page):
 
         def realizar_peticion():
             try:
-                req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
+                # Evita la caché de 5 minutos de GitHub Raw añadiendo timestamp y headers no-cache
+                url_cache_buster = f"{URL_STORIES_REMOTO}?t={int(time.time())}"
+                req = urllib.request.Request(
+                    url_cache_buster,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                )
                 with urllib.request.urlopen(req, timeout=4) as response:
                     return json.loads(response.read().decode('utf-8'))
-            except Exception:
+            except Exception as err:
+                print(f"Aviso conexión GitHub: {err}")
                 return None
 
         content_remoto = await asyncio.to_thread(realizar_peticion)
