@@ -28,6 +28,9 @@ def main(page: ft.Page):
     page.bgcolor = bg_color_actual
     
     modo_remoto = False
+    datos_paquetes = []
+    estado_sincronizacion = "Cargando copia local..."
+    sincronizando = False
 
     # --- RESOLVER RUTA DE IMAGEN ---
     def resolver_ruta_imagen(ruta: str) -> str:
@@ -59,40 +62,69 @@ def main(page: ft.Page):
         page.bgcolor = bg_color_actual
         route_change(None)
 
-    # --- CARGA INTELIGENTE DE DATOS ---
-    datos_paquetes = []
-    
-    def cargar_historias():
-        nonlocal datos_paquetes, modo_remoto
-        # 1. Intentar descargar desde GitHub
+    # --- 1. CARGA LOCAL INICIAL (OFFLINE-FIRST) ---
+    def cargar_historias_local():
+        nonlocal datos_paquetes, modo_remoto, estado_sincronizacion
+        modo_remoto = False
         try:
-            print("-> Conectando a GitHub para actualizar historias...")
-            req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=4) as response:
-                content = json.loads(response.read().decode('utf-8'))
-                datos_paquetes = content.get("paquetes", [])
-                modo_remoto = True
-                print(f"-> ¡Éxito! Historias actualizadas desde GitHub. Colecciones: {len(datos_paquetes)}")
-                
-                with open(RUTA_STORIES_LOCAL, "w", encoding="utf-8") as f:
-                    json.dump(content, f, ensure_ascii=False, indent=2)
-                return
+            if os.path.exists(RUTA_STORIES_LOCAL):
+                with open(RUTA_STORIES_LOCAL, "r", encoding="utf-8") as f:
+                    content = json.load(f)
+                    datos_paquetes = content.get("paquetes", [])
+                    estado_sincronizacion = "Cargado desde almacenamiento local"
+            else:
+                datos_paquetes = []
+                estado_sincronizacion = "Sin archivo local de historias"
         except Exception as err:
+            datos_paquetes = []
+            estado_sincronizacion = f"Error al cargar copia local: {err}"
+
+    # Carga local inmediata antes de mostrar la UI
+    cargar_historias_local()
+
+    # --- 2. SINCRONIZACIÓN EN SEGUNDO PLANO ---
+    async def sincronizar_github():
+        nonlocal datos_paquetes, modo_remoto, estado_sincronizacion, sincronizando
+        sincronizando = True
+        estado_sincronizacion = "Comprobando historias en la nube..."
+        if page.route == "/":
+            route_change(None)
+
+        def realizar_peticion():
+            try:
+                req = urllib.request.Request(URL_STORIES_REMOTO, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=4) as response:
+                    return json.loads(response.read().decode('utf-8'))
+            except Exception:
+                return None
+
+        content_remoto = await asyncio.to_thread(realizar_peticion)
+        sincronizando = False
+
+        if content_remoto and "paquetes" in content_remoto:
+            paquetes_remotos = content_remoto.get("paquetes", [])
+            # Solo actualizamos si hay historias nuevas o cambios reales
+            if paquetes_remotos != datos_paquetes:
+                datos_paquetes = paquetes_remotos
+                modo_remoto = True
+                estado_sincronizacion = "¡Nuevas historias cargadas desde GitHub!"
+                try:
+                    with open(RUTA_STORIES_LOCAL, "w", encoding="utf-8") as f:
+                        json.dump(content_remoto, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    print(f"No se pudo guardar la copia local: {e}")
+            else:
+                modo_remoto = True
+                estado_sincronizacion = "Conectado: Historias al día"
+        else:
             modo_remoto = False
-            print(f"-> No se pudo conectar con GitHub ({err}). Cargando copia local...")
+            estado_sincronizacion = "Sin conexión (modo local activo)"
 
-        # 2. Cargar copia local con ruta absoluta explícita
-        try:
-            with open(RUTA_STORIES_LOCAL, "r", encoding="utf-8") as f:
-                content = json.load(f)
-                datos_paquetes = content.get("paquetes", [])
-                print(f"-> 'stories.json' local cargado con éxito. Colecciones: {len(datos_paquetes)}")
-        except FileNotFoundError:
-            print(f"Aviso: No se encontró stories.json en {RUTA_STORIES_LOCAL}")
-        except json.JSONDecodeError:
-            print("Error: stories.json local no es un JSON válido.")
+        if page.route == "/":
+            route_change(None)
 
-    cargar_historias()
+    # Lanza la sincronización sin bloquear la app
+    asyncio.create_task(sincronizar_github())
 
     # --- VISTA 1: MENÚ DE COLECCIONES ---
     def vista_colecciones():
@@ -131,7 +163,7 @@ def main(page: ft.Page):
         if not datos_paquetes:
             controles.append(
                 ft.Container(
-                    content=ft.Text("No se pudieron cargar historias desde GitHub ni desde el archivo local.", color="red", size=16),
+                    content=ft.Text("No se pudieron cargar historias desde el archivo local ni desde GitHub.", color="red", size=16),
                     padding=20,
                 )
             )
@@ -173,9 +205,39 @@ def main(page: ft.Page):
             )
             controles.append(tarjeta)
 
+        # Barra de estado inferior (fija al fondo de la pantalla)
+        indicador_icono = (
+            ft.ProgressRing(width=12, height=12, stroke_width=2, color="#D32F2F")
+            if sincronizando
+            else ft.Icon(ft.Icons.WIFI if modo_remoto else ft.Icons.WIFI_OFF, size=14, color="#D32F2F")
+        )
+
+        barra_estado = ft.Container(
+            content=ft.Row(
+                [
+                    indicador_icono,
+                    ft.Text(estado_sincronizacion, size=12, color=texto_secundario),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=8,
+            ),
+            bgcolor=bg_card,
+            padding=10,
+            border_radius=ft.BorderRadius(top_left=10, top_right=10, bottom_left=0, bottom_right=0),
+        )
+
         return ft.View(
             route="/",
-            controls=[ft.ListView(expand=True, spacing=15, padding=20, controls=controles)],
+            controls=[
+                ft.Column(
+                    controls=[
+                        ft.ListView(expand=True, spacing=15, padding=20, controls=controles),
+                        barra_estado,
+                    ],
+                    expand=True,
+                    spacing=0,
+                )
+            ],
             bgcolor=bg_color_actual,
         )
 
