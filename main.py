@@ -185,7 +185,7 @@ def main(page: ft.Page):
             
         return f"/{nombre_relativo}"
 
-    # --- RESOLVER RUTA DE FUENTE PERSONALIZADA ---
+    # --- RESOLVER RUTA DE FUENTE Y ESPACIADO DE LETRAS ---
     def resolver_ruta_fuente(ruta: str) -> str:
         if not ruta or ruta.lower() == "none":
             return ""
@@ -203,6 +203,27 @@ def main(page: ft.Page):
             return f"{URL_ASSETS_REMOTO}{nombre_relativo}"
 
         return f"/{nombre_relativo}"
+
+    def procesar_campo_font(font_val: str):
+        """
+        Soporta formato: "assets/fonts/fuente.ttf, 10" o "assets/fonts/fuente.ttf"
+        Devuelve tupla: (ruta_fuente, espaciado_letras)
+        """
+        if not font_val or font_val.lower() == "none":
+            return "", None
+
+        partes = font_val.split(",")
+        ruta_raw = partes[0].strip()
+
+        spacing = None
+        if len(partes) > 1:
+            try:
+                spacing = float(partes[1].strip())
+            except ValueError:
+                spacing = None
+
+        ruta_resuelte = resolver_ruta_fuente(ruta_raw)
+        return ruta_resuelte, spacing
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
@@ -362,9 +383,9 @@ def main(page: ft.Page):
             banner_val = paquete.get("banner", "none")
             banner_ruta = resolver_ruta_imagen(banner_val) if banner_val and banner_val.lower() != "none" else ""
 
-            # Gestión de fuente personalizada para el título del paquete
+            # Procesar fuente y espaciado de letras
             font_val = paquete.get("font", "none")
-            font_ruta = resolver_ruta_fuente(font_val) if font_val and font_val.lower() != "none" else ""
+            font_ruta, letter_spacing_val = procesar_campo_font(font_val)
             
             font_family_nombre = None
             if font_ruta:
@@ -382,7 +403,8 @@ def main(page: ft.Page):
                                 size=20,
                                 weight=ft.FontWeight.BOLD,
                                 color="white" if banner_ruta else texto_principal,
-                                font_family=font_family_nombre
+                                font_family=font_family_nombre,
+                                letter_spacing=letter_spacing_val
                             ),
                             ft.Text(subtitulo_conteo, size=14, color="white70" if banner_ruta else texto_secundario),
                         ],
@@ -498,9 +520,8 @@ def main(page: ft.Page):
 
         stories = paquete.get("historias") or paquete.get("stories") or []
 
-        # Fuente personalizada opcional también para el encabezado
         font_val = paquete.get("font", "none")
-        font_ruta = resolver_ruta_fuente(font_val) if font_val and font_val.lower() != "none" else ""
+        font_ruta, letter_spacing_val = procesar_campo_font(font_val)
         font_family_nombre = f"font_{pkg_id}" if font_ruta else None
 
         controles = [
@@ -519,6 +540,7 @@ def main(page: ft.Page):
                             color="#D32F2F",
                             text_align=ft.TextAlign.CENTER,
                             font_family=font_family_nombre,
+                            letter_spacing=letter_spacing_val,
                             expand=True,
                         ),
                         ft.Container(width=48),
