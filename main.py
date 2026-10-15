@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import asyncio
+from datetime import datetime
 import flet as ft
 from flet.app import run
 
@@ -15,9 +16,41 @@ GITHUB_BRANCH = "main"
 URL_STORIES_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/stories.json"
 URL_ASSETS_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/assets/"
 
-# Ruta absoluta dinámica para compatibilidad con Android / Linux / Windows
+# Rutas absolutas dinámicas para historias, progreso e imágenes
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RUTA_STORIES_LOCAL = os.path.join(BASE_DIR, "stories.json")
+RUTA_COMPLETADAS = os.path.join(BASE_DIR, "historias_completadas.json")
+DIR_ASSETS_LOCAL = os.path.join(BASE_DIR, "assets")
+
+def es_paquete_visible(temp_str: str) -> bool:
+    """
+    Evalúa si un paquete es visible según la fecha actual.
+    Formatos soportados:
+    - "always" / "allways" -> Siempre visible.
+    - "DD-MM/DD-MM" (ej: "01-12/01-02") -> Visible dentro de ese rango de fechas todos los años.
+    """
+    if not temp_str or temp_str.lower() in ["always", "allways"]:
+        return True
+
+    try:
+        inicio_str, fin_str = temp_str.split("/")
+        d_inicio, m_inicio = map(int, inicio_str.split("-"))
+        d_fin, m_fin = map(int, fin_str.split("-"))
+
+        hoy = datetime.now()
+        fecha_actual = (hoy.month, hoy.day)
+        fecha_inicio = (m_inicio, d_inicio)
+        fecha_fin = (m_fin, d_fin)
+
+        # Si el rango no cruza fin de año (ej: 15-03 a 15-04)
+        if fecha_inicio <= fecha_fin:
+            return fecha_inicio <= fecha_actual <= fecha_fin
+        else:
+            # Si el rango cruza fin de año (ej: 01-12 a 01-02)
+            return fecha_actual >= fecha_inicio or fecha_actual <= fecha_fin
+    except Exception as e:
+        print(f"Aviso al validar fecha 'temp': {e}")
+        return True
 
 def main(page: ft.Page):
     page.title = "Secret Stories"
@@ -32,7 +65,93 @@ def main(page: ft.Page):
     estado_sincronizacion = "Cargando copia local..."
     sincronizando = False
 
-    # --- RESOLVER RUTA DE IMAGEN ---
+    # Diccionario en memoria para consulta rápida: { ("id_paquete", "id_historia"): "y" / "n" }
+    completadas_dict = {}
+
+    # --- GESTIÓN DEL ARCHIVO 'historias_completadas.json' ---
+    def sincronizar_y_cargar_completadas():
+        nonlocal completadas_dict
+        datos_existentes = {}
+
+        # 1. Leer estado actual si el archivo ya existe
+        if os.path.exists(RUTA_COMPLETADAS):
+            try:
+                with open(RUTA_COMPLETADAS, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    for pkg in data.get("paquetes", []):
+                        p_id = str(pkg.get("id_paquete"))
+                        for h in pkg.get("historias", []):
+                            h_id = str(h.get("id"))
+                            datos_existentes[(p_id, h_id)] = h.get("completada", "n")
+            except Exception as e:
+                print(f"Aviso al leer historias_completadas.json: {e}")
+
+        # 2. Reconstruir estructura conservando estados previos y añadiendo historias nuevas
+        nueva_estructura = {"paquetes": []}
+        completadas_dict = {}
+
+        for paquete in datos_paquetes:
+            pkg_id = str(paquete.get("id_paquete") or paquete.get("nombre"))
+            historias_pkg = paquete.get("historias") or paquete.get("stories") or []
+            
+            lista_historias_json = []
+            for historia in historias_pkg:
+                h_id = str(historia.get("id", 0))
+                # Conserva "y" / "n" previo o establece "n" por defecto
+                estado = datos_existentes.get((pkg_id, h_id), "n")
+                completadas_dict[(pkg_id, h_id)] = estado
+                
+                lista_historias_json.append({
+                    "id": historia.get("id", 0),
+                    "completada": estado
+                })
+            
+            nueva_estructura["paquetes"].append({
+                "id_paquete": paquete.get("id_paquete") or paquete.get("nombre"),
+                "historias": lista_historias_json
+            })
+
+        # 3. Guardar el archivo historias_completadas.json actualizado
+        try:
+            with open(RUTA_COMPLETADAS, "w", encoding="utf-8") as f:
+                json.dump(nueva_estructura, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error al escribir historias_completadas.json: {e}")
+
+    def toggle_completado(pkg_id, historia_id):
+        p_key = str(pkg_id)
+        h_key = str(historia_id)
+        
+        estado_actual = completadas_dict.get((p_key, h_key), "n")
+        nuevo_estado = "y" if estado_actual != "y" else "n"
+        completadas_dict[(p_key, h_key)] = nuevo_estado
+        
+        # Guardar cambio en historias_completadas.json
+        if not os.path.exists(RUTA_COMPLETADAS):
+            sincronizar_y_cargar_completadas()
+
+        try:
+            with open(RUTA_COMPLETADAS, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            for pkg in data.get("paquetes", []):
+                if str(pkg.get("id_paquete")) == p_key:
+                    for h in pkg.get("historias", []):
+                        if str(h.get("id")) == h_key:
+                            h["completada"] = nuevo_estado
+                            break
+            
+            with open(RUTA_COMPLETADAS, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error al actualizar estado en json: {e}")
+
+        route_change(None)
+
+    def es_completada(pkg_id, historia_id) -> bool:
+        return completadas_dict.get((str(pkg_id), str(historia_id))) == "y"
+
+    # --- RESOLVER RUTA DE IMAGEN (DIRECTA DESDE assets LOCAL) ---
     def resolver_ruta_imagen(ruta: str) -> str:
         if not ruta:
             return ""
@@ -41,8 +160,20 @@ def main(page: ft.Page):
         
         nombre_archivo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
         
+        # 1. Buscar el archivo tal cual en la carpeta assets local
+        if os.path.exists(os.path.join(DIR_ASSETS_LOCAL, nombre_archivo)):
+            return f"/{nombre_archivo}"
+
+        # 2. Buscar si existe la versión .webp en assets local
+        base_nombre, _ = os.path.splitext(nombre_archivo)
+        nombre_webp = f"{base_nombre}.webp"
+        if os.path.exists(os.path.join(DIR_ASSETS_LOCAL, nombre_webp)):
+            return f"/{nombre_webp}"
+
+        # 3. Solo si no existe en la carpeta assets local y estamos conectados, usar GitHub
         if modo_remoto:
             return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
+            
         return f"/{nombre_archivo}"
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
@@ -79,8 +210,9 @@ def main(page: ft.Page):
             datos_paquetes = []
             estado_sincronizacion = f"Error al cargar copia local: {err}"
 
-    # Carga local inmediata antes de mostrar la UI
+    # Carga local inmediata e inicialización de completadas
     cargar_historias_local()
+    sincronizar_y_cargar_completadas()
 
     # --- 2. SINCRONIZACIÓN EN SEGUNDO PLANO ---
     async def sincronizar_github():
@@ -103,7 +235,6 @@ def main(page: ft.Page):
 
         if content_remoto and "paquetes" in content_remoto:
             paquetes_remotos = content_remoto.get("paquetes", [])
-            # Solo actualizamos si hay historias nuevas o cambios reales
             if paquetes_remotos != datos_paquetes:
                 datos_paquetes = paquetes_remotos
                 modo_remoto = True
@@ -113,6 +244,9 @@ def main(page: ft.Page):
                         json.dump(content_remoto, f, ensure_ascii=False, indent=2)
                 except Exception as e:
                     print(f"No se pudo guardar la copia local: {e}")
+                
+                # Actualizar la lista de completadas conservando el progreso
+                sincronizar_y_cargar_completadas()
             else:
                 modo_remoto = True
                 estado_sincronizacion = "Conectado: Historias al día"
@@ -123,7 +257,7 @@ def main(page: ft.Page):
         if page.route == "/":
             route_change(None)
 
-    # Lanza la sincronización sin bloquear la app
+    # Lanza la sincronización en segundo plano
     asyncio.create_task(sincronizar_github())
 
     # --- VISTA 1: MENÚ DE COLECCIONES ---
@@ -169,12 +303,19 @@ def main(page: ft.Page):
             )
 
         for paquete in datos_paquetes:
+            # Filtrado por fecha estacional (campo temp)
+            if not es_paquete_visible(paquete.get("temp", "always")):
+                continue
+
             nombre = paquete.get("nombre", "Sin nombre")
             pkg_id = paquete.get("id_paquete") or nombre
             
             historias_paquete = paquete.get("historias") or paquete.get("stories") or []
             total_historias = len(historias_paquete)
-            subtitulo_conteo = f"{total_historias} historias" if total_historias != 1 else "1 historia"
+            
+            # Recuento dinámico de historias completadas
+            completadas_count = sum(1 for h in historias_paquete if es_completada(pkg_id, h.get("id")))
+            subtitulo_conteo = f"{completadas_count}/{total_historias} historias completadas"
             
             tarjeta = ft.GestureDetector(
                 content=ft.Card(
@@ -205,7 +346,7 @@ def main(page: ft.Page):
             )
             controles.append(tarjeta)
 
-        # Barra de estado inferior (fija al fondo de la pantalla)
+        # Barra de estado inferior fija al fondo
         indicador_icono = (
             ft.ProgressRing(width=12, height=12, stroke_width=2, color="#D32F2F")
             if sincronizando
@@ -305,6 +446,8 @@ def main(page: ft.Page):
             h_id = historia.get("id", 0)
             h_titulo = historia.get("titulo", "Misterio")
             h_imagen = resolver_ruta_imagen(historia.get("imagen", ""))
+            
+            es_comp = es_completada(pkg_id, h_id)
 
             tarjeta = ft.Card(
                 elevation=4,
@@ -330,12 +473,25 @@ def main(page: ft.Page):
                                     content=ft.Icon(ft.Icons.BROKEN_IMAGE, color="white54" if es_oscuro else "black38", size=40),
                                 ),
                             ),
-                            ft.Text(
-                                f"#{h_id} - {h_titulo}",
-                                size=18,
-                                weight=ft.FontWeight.BOLD,
-                                color=texto_principal,
-                                text_align=ft.TextAlign.CENTER,
+                            ft.Row(
+                                [
+                                    ft.Text(
+                                        f"#{h_id} - {h_titulo}",
+                                        size=18,
+                                        weight=ft.FontWeight.BOLD,
+                                        color=texto_principal,
+                                        text_align=ft.TextAlign.CENTER,
+                                        expand=True,
+                                    ),
+                                    ft.Icon(
+                                        ft.Icons.CHECK_CIRCLE,
+                                        color="#4CAF50",
+                                        size=22,
+                                        tooltip="Completada"
+                                    ) if es_comp else ft.Container(),
+                                ],
+                                alignment=ft.MainAxisAlignment.CENTER,
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
                             ),
                         ],
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -371,6 +527,7 @@ def main(page: ft.Page):
             return ft.View(route=f"/juego/{pkg_id}/{historia_id}", controls=[ft.Text("Historia no encontrada")], bgcolor=bg_color_actual)
 
         mostrando_frente = True
+        es_comp = es_completada(pkg_id, historia_id)
 
         async def girar_tarjeta(e):
             nonlocal mostrando_frente
@@ -392,6 +549,30 @@ def main(page: ft.Page):
             tarjeta_contenedor.animate_scale = ft.Animation(180, curve=ft.AnimationCurve.EASE_OUT)
             tarjeta_contenedor.scale = ft.Scale(scale_x=1.0, scale_y=1.0)
             page.update()
+
+        btn_marcar_completado = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(
+                        ft.Icons.CHECK_CIRCLE if es_comp else ft.Icons.CHECK_CIRCLE_OUTLINE,
+                        color="white",
+                        size=20
+                    ),
+                    ft.Text(
+                        "Completada ✓" if es_comp else "Marcar como completada",
+                        color="white",
+                        weight=ft.FontWeight.BOLD
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=8,
+            ),
+            bgcolor="#2E7D32" if es_comp else "#333333",
+            padding=12,
+            border_radius=8,
+            ink=True,
+            on_click=lambda e: toggle_completado(pkg_id, historia_id),
+        )
 
         tarjeta_frente_content = ft.Column(
             [
@@ -439,6 +620,7 @@ def main(page: ft.Page):
                     ink=True,
                     on_click=girar_tarjeta,
                 ),
+                btn_marcar_completado,
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=15,
@@ -478,6 +660,7 @@ def main(page: ft.Page):
                     ink=True,
                     on_click=girar_tarjeta,
                 ),
+                btn_marcar_completado,
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=15,

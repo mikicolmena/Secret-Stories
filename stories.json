@@ -3,6 +3,7 @@
     {
       "id_paquete": "ss_1",
       "nombre": "Secret Stories #1",
+      "temp": "always",
       "historias": [
         {
           "id": 1,
@@ -47,8 +48,9 @@
       ]
     },
     {
-      "id_paquete": "ss_reales_1",
-      "nombre": "Historias Reales #1",
+      "id_paquete": "ss_halloween_1",
+      "nombre": "Historias Halloween #1",
+      "temp": "01-10/01-11",
       "historias": [
         {
           "id": 1,
@@ -56,7 +58,7 @@
           "descripcion": "Desapareció un diamante de una caja fuerte sellada...",
           "solucion": "El diamante era de hielo y se derritió...",
           "categoria": "Real",
-          "imagen": "assets/ss_reales_1_1.webp"
+          "imagen": "assets/ss_halloween_1_1.webp"
         }
       ]
     }
