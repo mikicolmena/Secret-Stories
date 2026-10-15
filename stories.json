@@ -10,7 +10,7 @@
           "descripcion": "En el castillo de Edimburgo, una melodía surgía cada noche de un pasillo sellado, aunque nadie había entrado allí en décadas.",
           "solucion": "Durante semanas, la vigilante Inés oyó una flauta en un corredor clausurado del castillo de Edimburgo. La melodía aparecía solo en noches ventosas; a veces, una sombra cruzaba la pared aunque el pasillo estaba vacío. Los guías hablaban del fantasma de un gaitero desaparecido durante un antiguo asedio, y la historia empezó a atraer visitantes. Inés decidió investigar durante una tormenta y notó una corriente helada entre dos piedras. Tras retirar una rejilla cubierta de polvo, encontró un viejo conducto que daba al exterior. El viento hacía vibrar una pieza metálica suelta, produciendo las notas. Además, los faros de los coches proyectaban sombras de ramas sobre la pared. El supuesto fantasma nunca había estado allí: el castillo estaba tocando solo.",
           "categoria": "Paranormal",
-          "imagen": "assets/ss1_1.jpeg"
+          "imagen": "assets/ss1_1.webp"
         },
         {
           "id": 2,
@@ -18,7 +18,7 @@
           "descripcion": "En el Gran Bazar de Estambul, un comerciante comenzó a recibir monedas de un imperio desaparecido que nadie recordaba haberle entregado.",
           "solucion": "Durante un mes, Kemal encontró monedas otomanas antiguas en su caja registradora. Algunas eran auténticas y valían una fortuna. Convencido de que su tienda escondía un secreto, empezó a anunciar el fenómeno y pronto llegaron turistas y coleccionistas de toda Turquía. Las ventas se multiplicaron, pero un numismático reconoció una de las monedas: pertenecía a una colección privada que había sido robada años atrás. La policía registró el negocio y descubrió un doble fondo bajo el mostrador. Kemal introducía allí las monedas y las mezclaba con el cambio durante las ventas para fingir que aparecían misteriosamente. Había comprado las piezas con dinero prestado para atraer clientes, pero terminó perdiendo la tienda y enfrentándose a una investigación por el origen de varias monedas.",
           "categoria": "Codicia",
-          "imagen": "assets/ss1_2.jpeg"
+          "imagen": "assets/ss1_2.webp"
         },
         {
           "id": 3,
@@ -26,7 +26,7 @@
           "descripcion": "En el puerto de Nápoles, una lancha regresaba cada madrugada con una silla empapada en cubierta, aunque su patrón insistía en que viajaba solo.",
           "solucion": "Durante cinco noches, los trabajadores del puerto observaron el mismo fenómeno: la silla aparecía mojada incluso cuando el mar estaba en calma y no había llovido. Un vigilante sospechó que el patrón escondía algo y colocó una cámara frente al embarcadero. En las imágenes no aparecía ningún pasajero, pero la silla se desplazaba unos centímetros durante cada viaje. La policía inspeccionó la lancha y descubrió una cuerda que atravesaba una rendija bajo el suelo. Al levantar una tabla, encontró un compartimento oculto donde un hombre permanecía encerrado. Era un mecánico al que el patrón había secuestrado después de que descubriera sus negocios ilegales. El prisionero mojaba la silla con agua de mar y tiraba de la cuerda para llamar la atención. La extraña señal terminó salvándole la vida.",
           "categoria": "Secuestro",
-          "imagen": "assets/ss1_3.jpeg"
+          "imagen": "assets/ss1_3.webp"
         },
         {
           "id": 4,
@@ -34,7 +34,7 @@
           "descripcion": "En la Torre de Belém, una mujer anotaba algo frente al río cada madrugada, incluso cuando la puerta más cercana llevaba años cerrada.",
           "solucion": "Durante varias semanas, el guardia Tomás vio a Inés medir la altura del agua junto a la Torre de Belém y apuntar cifras en una libreta. Como nunca entraba al monumento, pensó que preparaba algún robo y avisó a la administración. Al revisar sus notas, una conservadora descubrió que llevaba tres años registrando las mareas y comparándolas con las marcas pintadas en una escalera de servicio. Las cifras no coincidían: durante las últimas reparaciones, alguien había colocado las marcas varios centímetros por encima del nivel real. Eso ocultaba que una salida de drenaje estaba obstruida y el agua ya alcanzaba un depósito de documentos antiguos. Inés era una ingeniera jubilada que había trabajado en los ferris del Tajo. Tras difundirse su hallazgo, repararon el desagüe y la prensa la bautizó como la mujer que salvó el archivo.",
           "categoria": "Obsesión",
-          "imagen": "assets/ss1_4.jpeg"
+          "imagen": "assets/ss1_4.webp"
         },
         {
           "id": 5,
@@ -42,7 +42,7 @@
           "descripcion": "En el Louvre, un visitante fue acusado de seguir a una mujer por siete salas consecutivas, aunque ambos aseguraban no conocerse.",
           "solucion": "Durante una mañana en el Louvre, el vigilante Karim observó que un visitante llamado Bruno aparecía detrás de la misma mujer en tres salas distintas. En la cuarta, ella pidió ayuda: estaba segura de que la seguían. Karim los separó y revisó sus entradas. La mujer, Elise, había elegido las salas siguiendo el orden de un folleto turístico; Bruno recorría el museo buscando fotografiar los cuadros sin gente y elegía los rincones iluminados por las ventanas, que lo llevaban a los mismos puntos. Las cámaras confirmaron que nunca intentó acercarse a ella y que incluso cambió de ruta para evitarla. Cuando ambos se disculparon, Elise confesó que trabajaba como investigadora de fraudes y que había pasado la mañana convencida de haber descubierto un acosador. Bruno resultó ser fotógrafo de bodas y solo quería probar su nueva cámara.",
           "categoria": "Coincidencia",
-          "imagen": "assets/ss1_5.jpeg"
+          "imagen": "assets/ss1_5.webp"
         }
       ]
     },
@@ -56,7 +56,7 @@
           "descripcion": "Desapareció un diamante de una caja fuerte sellada...",
           "solucion": "El diamante era de hielo y se derritió...",
           "categoria": "Real",
-          "imagen": "assets/ss_reales_1_1.jpeg"
+          "imagen": "assets/ss_reales_1_1.webp"
         }
       ]
     }
