@@ -222,8 +222,8 @@ def main(page: ft.Page):
             except ValueError:
                 spacing = None
 
-        ruta_resuelte = resolver_ruta_fuente(ruta_raw)
-        return ruta_resuelte, spacing
+        ruta_resuelta = resolver_ruta_fuente(ruta_raw)
+        return ruta_resuelta, spacing
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
@@ -404,7 +404,7 @@ def main(page: ft.Page):
                                 weight=ft.FontWeight.BOLD,
                                 color="white" if banner_ruta else texto_principal,
                                 font_family=font_family_nombre,
-                                letter_spacing=letter_spacing_val
+                                style=ft.TextStyle(letter_spacing=letter_spacing_val) if letter_spacing_val is not None else None
                             ),
                             ft.Text(subtitulo_conteo, size=14, color="white70" if banner_ruta else texto_secundario),
                         ],
@@ -540,7 +540,7 @@ def main(page: ft.Page):
                             color="#D32F2F",
                             text_align=ft.TextAlign.CENTER,
                             font_family=font_family_nombre,
-                            letter_spacing=letter_spacing_val,
+                            style=ft.TextStyle(letter_spacing=letter_spacing_val) if letter_spacing_val is not None else None,
                             expand=True,
                         ),
                         ft.Container(width=48),

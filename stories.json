@@ -54,7 +54,7 @@
       "nombre": "Historias Halloween #1",
       "temp": "14-10/01-11",
       "banner": "assets/img/bannerhalloween.webp",
-      "font": "assets/fonts/halloween.ttf, 10",
+      "font": "assets/fonts/halloween.ttf, 8",
       "historias": [
         {
           "id": 1,
