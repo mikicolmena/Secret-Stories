@@ -35,6 +35,14 @@
           "solucion": "Durante varias semanas, el guardia Tomás vio a Inés medir la altura del agua junto a la Torre de Belém y apuntar cifras en una libreta. Como nunca entraba al monumento, pensó que preparaba algún robo y avisó a la administración. Al revisar sus notas, una conservadora descubrió que llevaba tres años registrando las mareas y comparándolas con las marcas pintadas en una escalera de servicio. Las cifras no coincidían: durante las últimas reparaciones, alguien había colocado las marcas varios centímetros por encima del nivel real. Eso ocultaba que una salida de drenaje estaba obstruida y el agua ya alcanzaba un depósito de documentos antiguos. Inés era una ingeniera jubilada que había trabajado en los ferris del Tajo. Tras difundirse su hallazgo, repararon el desagüe y la prensa la bautizó como la mujer que salvó el archivo.",
           "categoria": "Obsesión",
           "imagen": "assets/ss1_4.jpeg"
+        },
+        {
+          "id": 5,
+          "titulo": "El sospechoso del Louvre",
+          "descripcion": "En el Louvre, un visitante fue acusado de seguir a una mujer por siete salas consecutivas, aunque ambos aseguraban no conocerse.",
+          "solucion": "Durante una mañana en el Louvre, el vigilante Karim observó que un visitante llamado Bruno aparecía detrás de la misma mujer en tres salas distintas. En la cuarta, ella pidió ayuda: estaba segura de que la seguían. Karim los separó y revisó sus entradas. La mujer, Elise, había elegido las salas siguiendo el orden de un folleto turístico; Bruno recorría el museo buscando fotografiar los cuadros sin gente y elegía los rincones iluminados por las ventanas, que lo llevaban a los mismos puntos. Las cámaras confirmaron que nunca intentó acercarse a ella y que incluso cambió de ruta para evitarla. Cuando ambos se disculparon, Elise confesó que trabajaba como investigadora de fraudes y que había pasado la mañana convencida de haber descubierto un acosador. Bruno resultó ser fotógrafo de bodas y solo quería probar su nueva cámara.",
+          "categoria": "Coincidencia",
+          "imagen": "assets/ss1_5.jpeg"
         }
       ]
     },
