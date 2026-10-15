@@ -20,15 +20,28 @@ URL_ASSETS_REMOTO = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_RE
 # Rutas absolutas dinámicas para historias, progreso e imágenes
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RUTA_STORIES_LOCAL = os.path.join(BASE_DIR, "stories.json")
-RUTA_COMPLETADAS = os.path.join(BASE_DIR, "historias_completadas.json")
 DIR_ASSETS_LOCAL = os.path.join(BASE_DIR, "assets")
+
+def obtener_ruta_guardado(nombre_archivo: str) -> str:
+    """
+    Devuelve una ruta con permisos de escritura garantizados.
+    En Android (APK) usa el directorio de usuario interno, en PC usa BASE_DIR.
+    """
+    if "ANDROID_ARGUMENT" in os.environ or "ANDROID_ROOT" in os.environ:
+        directorio_usuario = os.path.expanduser("~")
+        return os.path.join(directorio_usuario, nombre_archivo)
+    
+    return os.path.join(BASE_DIR, nombre_archivo)
+
+RUTA_COMPLETADAS = obtener_ruta_guardado("historias_completadas.json")
+
 
 def es_paquete_visible(temp_str: str) -> bool:
     """
     Evalúa si un paquete es visible según la fecha actual.
     Formatos soportados:
     - "always" / "allways" -> Siempre visible.
-    - "DD-MM/DD-MM" (ej: "01-10/01-11") -> Visible dentro de ese rango de fechas todos los años.
+    - "DD-MM/DD-MM" (ej: "26-10/01-11") -> Visible dentro de ese rango de fechas todos los años.
     """
     if not temp_str or temp_str.lower() in ["always", "allways"]:
         return True
@@ -43,15 +56,14 @@ def es_paquete_visible(temp_str: str) -> bool:
         fecha_inicio = (m_inicio, d_inicio)
         fecha_fin = (m_fin, d_fin)
 
-        # Si el rango no cruza fin de año (ej: 15-03 a 15-04)
         if fecha_inicio <= fecha_fin:
             return fecha_inicio <= fecha_actual <= fecha_fin
         else:
-            # Si el rango cruza fin de año (ej: 01-12 a 01-02)
             return fecha_actual >= fecha_inicio or fecha_actual <= fecha_fin
     except Exception as e:
         print(f"Aviso al validar fecha 'temp': {e}")
         return True
+
 
 def main(page: ft.Page):
     page.title = "Secret Stories"
@@ -66,7 +78,6 @@ def main(page: ft.Page):
     estado_sincronizacion = "Cargando copia local..."
     sincronizando = False
 
-    # Diccionario en memoria para consulta rápida: { ("id_paquete", "id_historia"): "y" / "n" }
     completadas_dict = {}
 
     # --- GESTIÓN DEL ARCHIVO 'historias_completadas.json' ---
@@ -74,7 +85,6 @@ def main(page: ft.Page):
         nonlocal completadas_dict
         datos_existentes = {}
 
-        # 1. Leer estado actual si el archivo ya existe
         if os.path.exists(RUTA_COMPLETADAS):
             try:
                 with open(RUTA_COMPLETADAS, "r", encoding="utf-8") as f:
@@ -87,7 +97,6 @@ def main(page: ft.Page):
             except Exception as e:
                 print(f"Aviso al leer historias_completadas.json: {e}")
 
-        # 2. Reconstruir estructura conservando estados previos y añadiendo historias nuevas
         nueva_estructura = {"paquetes": []}
         completadas_dict = {}
 
@@ -98,7 +107,6 @@ def main(page: ft.Page):
             lista_historias_json = []
             for historia in historias_pkg:
                 h_id = str(historia.get("id", 0))
-                # Conserva "y" / "n" previo o establece "n" por defecto
                 estado = datos_existentes.get((pkg_id, h_id), "n")
                 completadas_dict[(pkg_id, h_id)] = estado
                 
@@ -112,7 +120,6 @@ def main(page: ft.Page):
                 "historias": lista_historias_json
             })
 
-        # 3. Guardar el archivo historias_completadas.json actualizado
         try:
             with open(RUTA_COMPLETADAS, "w", encoding="utf-8") as f:
                 json.dump(nueva_estructura, f, ensure_ascii=False, indent=2)
@@ -127,7 +134,6 @@ def main(page: ft.Page):
         nuevo_estado = "y" if estado_actual != "y" else "n"
         completadas_dict[(p_key, h_key)] = nuevo_estado
         
-        # Guardar cambio en historias_completadas.json
         if not os.path.exists(RUTA_COMPLETADAS):
             sincronizar_y_cargar_completadas()
 
@@ -152,30 +158,33 @@ def main(page: ft.Page):
     def es_completada(pkg_id, historia_id) -> bool:
         return completadas_dict.get((str(pkg_id), str(historia_id))) == "y"
 
-    # --- RESOLVER RUTA DE IMAGEN (DIRECTA DESDE assets LOCAL) ---
+    # --- RESOLVER RUTA DE IMAGEN (SOPORTE assets/img/ Y LOCAL FIRST) ---
     def resolver_ruta_imagen(ruta: str) -> str:
-        if not ruta:
+        if not ruta or ruta.lower() == "none":
             return ""
         if ruta.startswith("http://") or ruta.startswith("https://"):
             return ruta
         
-        nombre_archivo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
+        # Limpiar prefijo assets/ si viene especificado
+        nombre_relativo = ruta.replace("assets/", "", 1) if ruta.startswith("assets/") else ruta
+        nombre_relativo = nombre_relativo.lstrip("/")
         
-        # 1. Buscar el archivo tal cual en la carpeta assets local
-        if os.path.exists(os.path.join(DIR_ASSETS_LOCAL, nombre_archivo)):
-            return f"/{nombre_archivo}"
+        # 1. Buscar en la carpeta local assets/
+        ruta_fisica_local = os.path.join(DIR_ASSETS_LOCAL, nombre_relativo)
+        if os.path.exists(ruta_fisica_local):
+            return f"/{nombre_relativo}"
 
-        # 2. Buscar si existe la versión .webp en assets local
-        base_nombre, _ = os.path.splitext(nombre_archivo)
+        # 2. Probar alternativa .webp local
+        base_nombre, _ = os.path.splitext(nombre_relativo)
         nombre_webp = f"{base_nombre}.webp"
         if os.path.exists(os.path.join(DIR_ASSETS_LOCAL, nombre_webp)):
             return f"/{nombre_webp}"
 
-        # 3. Solo si no existe en la carpeta assets local y estamos conectados, usar GitHub
+        # 3. Fallback a GitHub en modo remoto
         if modo_remoto:
-            return f"{URL_ASSETS_REMOTO}{nombre_archivo}"
+            return f"{URL_ASSETS_REMOTO}{nombre_relativo}"
             
-        return f"/{nombre_archivo}"
+        return f"/{nombre_relativo}"
 
     # --- FUNCIÓN DE NAVEGACIÓN ---
     def ir_a(ruta: str):
@@ -211,7 +220,6 @@ def main(page: ft.Page):
             datos_paquetes = []
             estado_sincronizacion = f"Error al cargar copia local: {err}"
 
-    # Carga local inmediata e inicialización de completadas
     cargar_historias_local()
     sincronizar_y_cargar_completadas()
 
@@ -225,7 +233,6 @@ def main(page: ft.Page):
 
         def realizar_peticion():
             try:
-                # Evita la caché de 5 minutos de GitHub Raw añadiendo timestamp y headers no-cache
                 url_cache_buster = f"{URL_STORIES_REMOTO}?t={int(time.time())}"
                 req = urllib.request.Request(
                     url_cache_buster,
@@ -256,7 +263,6 @@ def main(page: ft.Page):
                 except Exception as e:
                     print(f"No se pudo guardar la copia local: {e}")
                 
-                # Actualizar la lista de completadas conservando el progreso
                 sincronizar_y_cargar_completadas()
             else:
                 modo_remoto = True
@@ -268,7 +274,6 @@ def main(page: ft.Page):
         if page.route == "/":
             route_change(None)
 
-    # Lanza la sincronización en segundo plano
     asyncio.create_task(sincronizar_github())
 
     # --- VISTA 1: MENÚ DE COLECCIONES ---
@@ -314,7 +319,6 @@ def main(page: ft.Page):
             )
 
         for paquete in datos_paquetes:
-            # Filtrado por fecha estacional (campo temp)
             if not es_paquete_visible(paquete.get("temp", "always")):
                 continue
 
@@ -324,40 +328,70 @@ def main(page: ft.Page):
             historias_paquete = paquete.get("historias") or paquete.get("stories") or []
             total_historias = len(historias_paquete)
             
-            # Recuento dinámico de historias completadas
             completadas_count = sum(1 for h in historias_paquete if es_completada(pkg_id, h.get("id")))
             subtitulo_conteo = f"{completadas_count}/{total_historias} historias completadas"
             
+            banner_val = paquete.get("banner", "none")
+            banner_ruta = resolver_ruta_imagen(banner_val) if banner_val and banner_val.lower() != "none" else ""
+
+            # Contenido base de la tarjeta
+            fila_contenido = ft.Row(
+                [
+                    ft.Icon(ft.Icons.FOLDER_SPECIAL, color="#D32F2F", size=32),
+                    ft.Column(
+                        [
+                            ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color="white" if banner_ruta else texto_principal),
+                            ft.Text(subtitulo_conteo, size=14, color="white70" if banner_ruta else texto_secundario),
+                        ],
+                        spacing=2,
+                        expand=True,
+                    ),
+                    ft.Icon(ft.Icons.CHEVRON_RIGHT, color="white70" if banner_ruta else texto_secundario, size=24),
+                ],
+                spacing=15,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            )
+
+            # Si tiene banner, usa un Stack con capas de imagen + filtro oscuro
+            if banner_ruta:
+                contenido_tarjeta = ft.Container(
+                    border_radius=10,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                    content=ft.Stack(
+                        [
+                            ft.Image(
+                                src=banner_ruta,
+                                fit="cover",
+                                expand=True,
+                            ),
+                            ft.Container(
+                                bgcolor="#B3000000",  # Sombra oscura del 70% para legibilidad
+                                expand=True,
+                            ),
+                            ft.Container(
+                                content=fila_contenido,
+                                padding=18,
+                            ),
+                        ]
+                    ),
+                )
+            else:
+                contenido_tarjeta = ft.Container(
+                    bgcolor=bg_card,
+                    border_radius=10,
+                    padding=18,
+                    content=fila_contenido,
+                )
+
             tarjeta = ft.GestureDetector(
                 content=ft.Card(
                     elevation=4,
-                    content=ft.Container(
-                        bgcolor=bg_card,
-                        border_radius=10,
-                        padding=18,
-                        content=ft.Row(
-                            [
-                                ft.Icon(ft.Icons.FOLDER_SPECIAL, color="#D32F2F", size=32),
-                                ft.Column(
-                                    [
-                                        ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color=texto_principal),
-                                        ft.Text(subtitulo_conteo, size=14, color=texto_secundario),
-                                    ],
-                                    spacing=2,
-                                    expand=True,
-                                ),
-                                ft.Icon(ft.Icons.CHEVRON_RIGHT, color=texto_secundario, size=24),
-                            ],
-                            spacing=15,
-                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                        ),
-                    ),
+                    content=contenido_tarjeta,
                 ),
                 on_tap=lambda e, p_id=pkg_id: ir_a(f"/paquete/{p_id}"),
             )
             controles.append(tarjeta)
 
-        # Barra de estado inferior fija al fondo
         indicador_icono = (
             ft.ProgressRing(width=12, height=12, stroke_width=2, color="#D32F2F")
             if sincronizando
